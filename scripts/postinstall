@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# TODO: variabalize LD path
+
+chown root:wheel /Library/LaunchDaemons/${ld}
+chmod 0644 /Library/LaunchDaemons/${ld}
+chmod a+x ${scriptpath}
+launchctl load -w /Library/LaunchDaemons/${ld}
+
+echo "Validated permissions of relevant files"
+
+exit 0
