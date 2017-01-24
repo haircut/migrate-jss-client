@@ -42,7 +42,7 @@ launchdaemon_name="com.github.haircut.migrate-jss-client"
 quickadd_path="/tmp/QuickAdd.pkg"
 
 # Log file path
-log_file_path="/var/log/$(date "+%Y-%m-%d")-jss-client-migration.log"
+log_file_path="/var/log/jss-client-migration.log"
 
 # UI
 # Window title heading used for all UI windows
@@ -122,7 +122,11 @@ fi
 # remove the current jamf framework
 write_log "Removing JAMF framework"
 "${jamf}" removeFramework
-write_log "Removed the JAMF framework"
+if [[ ! $(which jamf) ]]; then
+    write_log "...successfully removed the JAMF framework"
+else
+    write_log "...it doesn't appear the framework was removed; check the device to confirm proper enrollment to the new JSS"
+fi
 
 # run the new quickadd
 write_log "Installing new quickadd"
@@ -144,14 +148,14 @@ write_log "Enabling MDM"
 
 # stop, unload, remove launchdaemon
 write_log "Removing launchd job"
-# TODO: variabalize and remove file
+launchctl unload "/Library/LaunchDaemons/${launchdaemon_name}.plist"
+rm "/Library/LaunchDaemons/${launchdaemon_name}.plist"
 write_log "Removed launchd job"
 
 write_log "Managing machine again"
 "${jamf}" manage
 
 sleep 20
-
 
 write_log "Re-opening Self Service"
 "${jamfHelper}" -windowType utility -title "${window_title}" -heading "${heading_post}" -description "${body_post}" -button1 "Ok" -icon "${icon}"

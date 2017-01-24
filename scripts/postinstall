@@ -1,12 +1,19 @@
 #!/bin/bash
 
-# TODO: variabalize LD path
+# LaunchDaemon name
+# The default value is usually best – it will be deleted anyway – but if your
+# environment calls for it, edit away. Be sure to change the value in the
+# /scripts/postinstall script as well.
+# NOTE: do NOT include the .plist extension!
+launchdaemon_name="com.github.haircut.migrate-jss-client"
 
-chown root:wheel /Library/LaunchDaemons/${ld}
-chmod 0644 /Library/LaunchDaemons/${ld}
-chmod a+x ${scriptpath}
-launchctl load -w /Library/LaunchDaemons/${ld}
+# Script path
+# Full path to the migration script
+script_path="/tmp/migrate-jss-client.sh"
 
-echo "Validated permissions of relevant files"
+chown root:wheel "/Library/LaunchDaemons/${launchdaemon_name}.plist"
+chmod 0644 "/Library/LaunchDaemons/${launchdaemon_name}.plist"
+chmod a+x "${script_path}"
+launchctl load "/Library/LaunchDaemons/${launchdaemon_name}.plist"
 
 exit 0
