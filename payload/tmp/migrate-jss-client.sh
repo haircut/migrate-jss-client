@@ -130,7 +130,9 @@ fi
 
 # run the new quickadd
 write_log "Installing new quickadd"
-/usr/sbin/installer -dumplog -verbose -pkg "${quickadd_path}" -target "/"
+write_log "============================"
+/usr/sbin/installer -pkg "${quickadd_path}" -target "/" | tee -a "${log_file_path}"
+write_log "============================"
 write_log "Finished installing new quickadd"
 
 # delete the quickadd
@@ -140,6 +142,8 @@ write_log "Removed QuickAdd package"
 # sleep again
 sleep 10
 
+# TODO: check that we are connected to the new JSS
+
 # manage and enable mdm
 write_log "Managing machine"
 "${jamf}" manage
@@ -148,6 +152,7 @@ write_log "Enabling MDM"
 
 # stop, unload, remove launchdaemon
 write_log "Removing launchd job"
+launchctl stop "${launchdaemon_name}"
 launchctl unload "/Library/LaunchDaemons/${launchdaemon_name}.plist"
 rm "/Library/LaunchDaemons/${launchdaemon_name}.plist"
 write_log "Removed launchd job"
