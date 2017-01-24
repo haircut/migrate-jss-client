@@ -22,6 +22,25 @@ runmode="${4:-interactive}"
 # removal using the profiles binary
 mdm_uid="00000000-0000-0000-A000-4A414D460003"
 
+# MDM profile filename
+# Used only in last-ditch scenarios if the profile is being stubborn, or the
+# Mac is in an incorrectly managed state wherein an MDM profile marked
+# unremovable is present, but the jamf binary and profiles binary can't remove
+# it. The default provided is the default name installed by the JSS.
+mdm_filename="MDM_ComputerPrefs.plist"
+
+# LaunchDaemon name
+# The default value is usually best – it will be deleted anyway – but if your
+# environment calls for it, edit away. Be sure to change the value in the
+# /scripts/postinstall script as well.
+# NOTE: do NOT include the .plist extension!
+launchdaemon_name="com.github.haircut.migrate-jss-client"
+
+# QuickAdd path
+# Full path to the QuickAdd package. If you followed the instructions in the
+# README, the default is fine.
+quickadd_path="/tmp/QuickAdd.pkg"
+
 # Log file path
 log_file_path="/var/log/$(date "+%Y-%m-%d")-jss-client-migration.log"
 
@@ -47,7 +66,8 @@ jamf=$(which jamf)
 jamfHelper="/Library/Application Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper"
 
 # file logging
-flog(){
+write_log(){
+    echo "${1}"
     echo "$(date "+%Y-%m-%d %H:%M:%S") ${1}" | tee -a "${log_file_path}"
 }
 
@@ -55,16 +75,16 @@ flog(){
 # main program                                                                #
 ###############################################################################
 
-flog "🎉 Beginning JSS migration"
+write_log "🎉 Beginning JSS migration 🎉"
 
 # Make sure we're actually connected to the old JSS
 if echo "$(${jamf} checkJSSConnection)" | grep -q "${old_jss_url}"; then
-    flog "...still connected to the old JSS ${old_jss_url}"
+    write_log "...still connected to the old JSS ${old_jss_url}"
 fi
 
 if [[ "${runmode}" == "interactive" ]]; then
     "${jamfHelper}" -windowType utility -title "${window_title}" -heading "${heading_pre}" -description "${body_pre}" -button1 "Ok" -icon "${icon}"
-    flog "...alerted user"
+    write_log "...alerted user"
 fi
 # wait 5 seconds for  good measure
 sleep 5
@@ -72,66 +92,71 @@ sleep 5
 # close self service if running
 ss_pid=$(pgrep "Self Service")
 if [[ $ss_pid ]]; then
-    flog "Self Service is running"
+    write_log "Self Service is running"
     osascript -e "tell application \"Self Service\" to quit"
-    flog "...Closed Self Service"
+    write_log "...Closed Self Service"
 fi
 
 # remove the mdm profile
-flog "Attempting to remove MDM profile"
+write_log "Attempting to remove MDM profile"
 "${jamf}" removeMdmProfile
 if [[ $? -gt 0 ]]; then
-    flog "...unable to remove MDM profile via jamf binary"
-    flog "...attempting to remove MDM profile by force"
+    write_log "...unable to remove MDM profile via jamf binary"
+    write_log "...attempting to remove MDM profile by force"
     profiles -R -p "${mdm_uid}"
     if [[ $? -gt 0 ]]; then
-        flog "...unable to remove MDM profile by force"
-        flog "☠️☠️☠️ this device may not be properly managed on the new JSS ☠️☠️☠️"
+        write_log "...unable to remove MDM profile by force"
+        write_log "...attempting last-ditch effort to delete the plist"
+        rm -f "/var/db/${mdm_filename}"
+        if [[ $? -gt 0 ]]; then
+            write_log "...completely unable to remove the MDM profile"
+        fi
+        write_log "☠️☠️☠️ this device may not be properly managed on the new JSS ☠️☠️☠️"
     else
-        flog "...successfully removed the MDM profile by force"
+        write_log "...successfully removed the MDM profile by force"
     fi
 else
-    flog "...successfully removed the MDM profile"
+    write_log "...successfully removed the MDM profile"
 fi
 
 # remove the current jamf framework
-flog "Removing JAMF framework"
+write_log "Removing JAMF framework"
 "${jamf}" removeFramework
-flog "Removed the JAMF framework"
+write_log "Removed the JAMF framework"
 
 # run the new quickadd
-flog "Installing new quickadd"
-/usr/sbin/installer -dumplog -verbose -pkg /Library/Application\ Support/QuickAdd-jamfcloud.pkg -target "/"
-flog "Finished installing new quickadd"
+write_log "Installing new quickadd"
+/usr/sbin/installer -dumplog -verbose -pkg "${quickadd_path}" -target "/"
+write_log "Finished installing new quickadd"
 
 # delete the quickadd
-rm /Library/Application\ Support/QuickAdd-jamfcloud.pkg
-flog "Removed QuickAdd package"
+rm "${quickadd_path}"
+write_log "Removed QuickAdd package"
 
 # sleep again
 sleep 10
 
 # manage and enable mdm
-flog "Managing machine"
+write_log "Managing machine"
 "${jamf}" manage
-flog "Enabling MDM"
+write_log "Enabling MDM"
 "${jamf}" mdm
 
 # stop, unload, remove launchdaemon
-flog "Removing launchd job"
+write_log "Removing launchd job"
 # TODO: variabalize and remove file
-flog "Removed launchd job"
+write_log "Removed launchd job"
 
-flog "Managing machine again"
+write_log "Managing machine again"
 "${jamf}" manage
 
 sleep 20
 
 
-flog "Re-opening Self Service"
-"${jamfHelper}" -windowType utility -title "Self Service Upgrade" -heading "Upgrade complete." -description "Self Service has been successfully upgraded. You may now re-open Self Service to access software installations and maintenance utilities. Please contact ITS if you need additional assistance." -button1 "Ok" -icon /Applications/Self\ Service.app/Contents/Resources/Self\ Service.icns
-flog "Alerted user migration finished"
+write_log "Re-opening Self Service"
+"${jamfHelper}" -windowType utility -title "${window_title}" -heading "${heading_post}" -description "${body_post}" -button1 "Ok" -icon "${icon}"
+write_log "Alerted user migration finished"
 
 # self destruct
-flog "💣 Self destruct! 💣"
+write_log "💣 Self destruct! 💣"
 rm "$0"
