@@ -11,10 +11,7 @@ new_jss_url="https://new.jss.url"
 # Run mode
 # 'silent' = for automated migrations; does not invoke a UI
 # 'interactive' = for Self Service policies; invokes a UI for user alerts
-# NOTE: Specify the DEFAULT value – parameter 4 can be passed in by the JSS
-#       for greater flexibility in deployment, i.e.:
-#           runmode="${4:-silent}" or "runmode=${4:-interactive}"
-runmode="${4:-'silent'}"
+runmode="silent"
 
 # MDM profile UID
 # The default value here should be correct, but always check your environment!

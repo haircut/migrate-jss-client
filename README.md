@@ -78,10 +78,10 @@ performing migrations in the background with no user interaction or alerts.
 
 1. Create a new policy and give it a fun name, like "Migrate Client to New JSS."
    Set a "Site" and "Category" if applicable.
-2. Set a "Trigger" – _Login_ or _Recurring Check-in" are most appropriate.
+2. Set a "Trigger" – _Login_ or _Recurring Check-in_ are most appropriate.
 3. Set the "Execution Frequency" as "Once per computer."
 4. In the "Packages" section, add your `migrate-jss-client-{version}.pkg` set
-   with the option to "Install" the package
+   with the option to "Install" the package.
 5. Leave the other payloads blank; we don't need to reboot or update inventory,
    etc.
 6. Set an appropriate **Scope**. You may need to set up Smart Groups or Static
@@ -91,3 +91,76 @@ performing migrations in the background with no user interaction or alerts.
 
 Your scoped clients should begin automatically migrating when they next hit the
 configured trigger.
+
+## Setting up a Self Service, user-initiated policy
+
+TODO
+
+## Configuration
+
+### `migrate-jss-client.sh`
+
+Take a look at `payload/tmp/migrate-jss-client.sh`; you may want to change some
+of the defaults. While most of the options are documented within the script,
+some require detailed explanation.
+
+###### `old_jss_url`
+The URL of your **OLD** JSS. This is your current JSS to which the clients you
+are moving are currently enrolled.
+
+###### `new_jss_url`
+The URL of your **NEW** JSS. This is your "destination" JSS to which the
+clients will be enrolled at the completion of the migration.
+
+###### `runmode`
+"`silent`" or "`interactive`"
+
+By default, `migrate-jss-client` runs in "`silent`" mode which is designed to
+execute the migration in the background with no user interaction or alerts.
+
+Since the script closes Self Service – or for other reasons your determine –
+you may wish to instead alert the user via `jamfHelper` GUI windows at the
+beginning and end of the process. See "Recommendations" for a specific use
+case.
+
+###### `mdm_uid`
+The UID of the MDM profile configured on the clients. This is used as a backup
+if the `jamf` binary is unable to remove the MDM profile. The default here is
+the UID common to most management systems; you shouldn't need to change it
+unless you have a customized MDM scenario.
+
+###### `mdm_filename`
+The filename of the MDM profile as it appears in
+`/var/db/ConfigurationProfiles` on a managed device. Used as a backup to the
+above backup should both the `jamf` and `profiles` binary fail to remove the
+profile. Like `mdm_uid`, the provided default is the filename common to most
+management systems and should not need to be changed.
+
+###### `launchdaemon_name`
+The name of the LaunchDaemon that kicks of the migration script. If you change
+this, you will also need to change the LaunchDaemon's filename, it's internal
+label, and edit the `scripts/postinstall` script to reflect the new name.
+There's little reason to change it since all files related to this tool are
+deleted once the process is complete, so only change this if you have an
+overriding need.
+
+###### `quickadd_path`
+The path to the QuickAdd package. Once you package this tool, your embedded
+QuickAdd will be installed on the client system in `/tmp`. If you decided to
+save your QuickAdd package with a more descriptive name, i.e.
+`QuickAdd-my-new-jss.pkg`, to better organize your files, you will need to
+reflect that filename here.
+
+###### `log_file_path`
+The path to the log file which contains a record of the client's migration.
+See "Monitoring Logs" for tips on pulling the log into your _new JSS_ for
+review.
+
+###### UI Options
+
+I feel each is adequately documented and explained within the script; no use
+rehashing them here.
+
+## Recommendations
+
+TODO
