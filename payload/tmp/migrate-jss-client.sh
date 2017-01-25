@@ -14,7 +14,7 @@ new_jss_url="https://new.jss.url"
 # NOTE: Specify the DEFAULT value – parameter 4 can be passed in by the JSS
 #       for greater flexibility in deployment, i.e.:
 #           runmode="${4:-silent}" or "runmode=${4:-interactive}"
-runmode="${4:-interactive}"
+runmode="${4:-'silent'}"
 
 # MDM profile UID
 # The default value here should be correct, but always check your environment!
@@ -142,13 +142,19 @@ write_log "Removed QuickAdd package"
 # sleep again
 sleep 10
 
-# TODO: check that we are connected to the new JSS
+# Make sure we're now connected to the new JSS
+if echo "$(${jamf} checkJSSConnection)" | grep -q "${new_jss_url}"; then
+    write_log "👏 Hooray! Enrolled and connected to ${new_jss_url} 👏"
+fi
 
 # manage and enable mdm
 write_log "Managing machine"
 "${jamf}" manage
 write_log "Enabling MDM"
 "${jamf}" mdm
+
+# sleep again
+sleep 10
 
 # stop, unload, remove launchdaemon
 write_log "Stopping LaunchDaemon"
@@ -172,13 +178,16 @@ fi
 write_log "Managing machine again"
 "${jamf}" manage
 
-sleep 20
+# sleep again
+sleep 10
 
 # alert user process is finished
 if [[ "${runmode}" == "interactive" ]]; then
     "${jamfHelper}" -windowType utility -title "${window_title}" -heading "${heading_post}" -description "${body_post}" -button1 "Ok" -icon "${icon}"
     write_log "Alerted user migration finished"
 fi
+
+write_log "All done!"
 
 # self destruct
 write_log "💣 Self destruct! 💣"
