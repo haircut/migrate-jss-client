@@ -151,20 +151,34 @@ write_log "Enabling MDM"
 "${jamf}" mdm
 
 # stop, unload, remove launchdaemon
-write_log "Removing launchd job"
+write_log "Stopping LaunchDaemon"
 launchctl stop "${launchdaemon_name}"
+if [[ $? -gt 0 ]]; then
+    write_log "...unable to stop LaunchDaemon"
+fi
+
 launchctl unload "/Library/LaunchDaemons/${launchdaemon_name}.plist"
+if [[ $? -gt 0 ]]; then
+    write_log "...unable to unload LaunchDaemon"
+fi
+
 rm "/Library/LaunchDaemons/${launchdaemon_name}.plist"
-write_log "Removed launchd job"
+if [[ $? -gt 0 ]]; then
+    write_log "...unable to delete LaunchDaemon"
+else
+    write_log "...deleted LaunchDaemon"
+fi
 
 write_log "Managing machine again"
 "${jamf}" manage
 
 sleep 20
 
-write_log "Re-opening Self Service"
-"${jamfHelper}" -windowType utility -title "${window_title}" -heading "${heading_post}" -description "${body_post}" -button1 "Ok" -icon "${icon}"
-write_log "Alerted user migration finished"
+# alert user process is finished
+if [[ "${runmode}" == "interactive" ]]; then
+    "${jamfHelper}" -windowType utility -title "${window_title}" -heading "${heading_post}" -description "${body_post}" -button1 "Ok" -icon "${icon}"
+    write_log "Alerted user migration finished"
+fi
 
 # self destruct
 write_log "💣 Self destruct! 💣"
