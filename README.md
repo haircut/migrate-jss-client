@@ -1,4 +1,8 @@
-# Migrate JSS Client(s)
+# ARCHIVED
+
+This technique is no longer valid, so the repository is archived.
+
+## Migrate JSS Client(s)
 
 A tool to move clients from one JSS to another.
 
